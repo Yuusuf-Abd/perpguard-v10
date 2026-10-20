@@ -1,0 +1,8 @@
+import {test} from 'node:test';import assert from 'node:assert/strict';
+import {isHash,isAddress,chainStatus,inspectTransaction,inspectContract} from '../server/protocol.mjs';
+test('public identifiers are strictly validated',()=>{assert.equal(isHash('0x'+'a'.repeat(64)),true);assert.equal(isHash('0x'+'a'.repeat(63)),false);assert.equal(isAddress('0x'+'f'.repeat(40)),true);assert.equal(isAddress('0x'+'f'.repeat(64)),false)});
+test('RPC network mismatch fails closed',async()=>{await assert.rejects(()=>chainStatus(async(method)=>method==='eth_chainId'?'0x1':'0x10'),/mismatch/)});
+test('network reports verified chain identity',async()=>{const status=await chainStatus(async(method)=>method==='eth_chainId'?'0x'+(50383).toString(16):'0x12');assert.equal(status.chainId,50383);assert.equal(status.blockNumber,18)});
+test('missing receipts do not assert fills',async()=>{const hash='0x'+'a'.repeat(64);const data=await inspectTransaction(hash,async()=>null);assert.equal(data.found,false);assert.equal(data.fillVerification,'not-established')});
+test('raw receipt logs are not labeled as fills',async()=>{const hash='0x'+'a'.repeat(64);const data=await inspectTransaction(hash,async(method)=>method==='eth_getTransactionReceipt'?{transactionHash:hash,blockNumber:'0x10',status:'0x1',logs:[{address:'0x'+'b'.repeat(40),topics:['0x'+'c'.repeat(64)]}]}:{input:'0x1234'});assert.equal(data.logCount,1);assert.equal(data.fillVerification,'not-established')});
+test('contract lookup does not claim official verification',async()=>{const result=await inspectContract('0x'+'a'.repeat(40),async()=> '0x1234');assert.equal(result.hasCode,true);assert.equal(result.verifiedDreamdexContract,false)});

@@ -1,4 +1,50 @@
-# PerpGuard v4 — Market Intelligence Workspace
+# Version 18 update
+
+See [V18_CHANGES.md](V18_CHANGES.md) for the new read-only Protocol Inspector, API endpoints, and verification limitations.
+
+# PerpGuard v17 — Market Intelligence & Testnet Evidence
+
+PerpGuard is an educational market-intelligence and public blockchain-evidence app for developers and researchers. It is **not a custodial wallet or an executable perpetual-trading client**.
+
+## Quick start (Windows PowerShell)
+
+```powershell
+npm.cmd install
+npm.cmd run verify
+npm.cmd run build
+```
+
+Terminal 1: `npm.cmd run server`  ·  Terminal 2: `npm.cmd run dev`
+
+Open `http://127.0.0.1:5173/`.
+
+## Public deployment
+
+Use the included `render.yaml` to create a Render Web Service from your GitHub repository. Or configure Build: `npm install && npm run build`, Start: `npm run server`, environment `HOST=0.0.0.0`, health path `/api/health`. Render provides `PORT`. Do not commit `.env` or secrets. See `submission/EXTERNAL_ACCOUNT_STEPS.md`.
+
+## Features and evidence
+
+Markets: sourced CoinGecko prices and charts, with refresh and source timestamps. Forex: Frankfurter daily reference rates. Risk Lab and Paper Portfolio: hypothetical simulations only. Wallet Watch: public Somnia account information, receipt verification, locally saved receipt references and CSV export. QA Center: organizer-format Markdown draft export. AI/FAQ: section guide and wallet safety education. Ecosystem: official resource links.
+
+Browser-local saved receipts can disappear if site storage is cleared; export CSV for your own records. A blockchain receipt **does not** establish a perpetual order fill. The dreamDEX staging market REST endpoint is not the Somnia perpetual order-execution SDK.
+
+## X posts
+
+**Not published yet.** The organizer requires 2–3 actual public X post links tagging [@DreamDEXSomnia](https://x.com/DreamDEXSomnia). Drafts: `submission/X_POST_DRAFTS_V17.md`.
+
+- Post 1: [add real published link]
+- Post 2: [add real published link]
+- Post 3 (optional): [add real published link]
+
+## Competition status
+
+Outstanding: genuine perpetual-order submission, verifiable protocol fills, public deployment confirmation, published X posts, whitelist approval and final submission. Do not report these as completed until independently verified.
+
+---
+
+# PerpGuard v15 — Research and Read-only Evidence
+
+# PerpGuard v13 — Market Intelligence and dreamDEX Feedback Workspace
 
 An independent educational research interface. No custody, wallet signatures, cryptocurrency transfers or trade execution.
 
@@ -77,3 +123,31 @@ See `COMPETITION_CHECKLIST.md` for an honest requirement-by-requirement assessme
 
 ## Exporting practice activity
 Open Paper Portfolio and select **Export CSV**. This exports locally simulated transactions only.
+
+## Who this is for
+PerpGuard is for learners and builders exploring market data, risk scenarios, public Somnia testnet account information, and reproducible protocol feedback. It is **not** an order execution app.
+
+## X posts
+No published X posts have been verified yet. Add links to **2 or 3 real published posts tagging [@DreamDEXSomnia](https://x.com/DreamDEXSomnia)** here after publishing them. Drafts are not valid URLs.
+
+## Competition eligibility
+Read [MVP_REQUIREMENTS.md](MVP_REQUIREMENTS.md). A functioning user interface, paper portfolio, or market API integration does **not** meet the MVP track requirement for actual Somnia Tokyo testnet perp orders and real order evidence. The feedback track accepts only independently verified issues.
+
+## Official dreamDEX and Somnia resources
+See [MVP_REQUIREMENTS.md](MVP_REQUIREMENTS.md) and the **Ecosystem** page of the site for all the organizer-provided official resource links. Report vulnerabilities privately to security@dreamdex.io.
+
+## v14 read-only transaction evidence
+
+Wallet Watch can inspect an existing Somnia Hideki testnet transaction hash. A successful blockchain receipt is **not** evidence of a filled perpetual order. This release does not place or execute leveraged trades. See `submission/COMPLIANCE_GAPS.md` and `RESEARCH_SOURCES.md`.
+
+## X posts
+
+No X post URLs have been provided or verified. Add 2–3 genuine published links tagging the organizer before submitting.
+
+
+## v15 sourced charts and AI
+See [V15_CHANGES.md](V15_CHANGES.md). The 90-second refresh interval is source-polling, not a streaming quote feed. AI provides educational market analysis only; it does not place leveraged orders.
+
+## v16 guided support and wallet model
+
+The Help & Support assistant greets visitors, provides a tour of every section and explains how to use Wallet Watch. Receiving addresses belong to external wallets; PerpGuard does not custody or transfer funds. Sending or withdrawing must be performed within the external wallet. Public transaction hashes can be verified for supported networks, but a successful receipt is not proof of a specific token transfer or order fill. See V16_CHANGES.md.

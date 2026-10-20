@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: perpguard
+    runtime: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm run server
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: COINGECKO_DEMO_KEY
+        sync: false
