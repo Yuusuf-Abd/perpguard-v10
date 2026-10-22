@@ -27,3 +27,41 @@ button:not(:disabled):active{transform:scale(.985)}
 
 /* v12: responsive protocol discovery and community links */
 .sidebar-foot a{color:#c5a8ff;text-decoration:none;display:inline-block;margin-bottom:8px}.sidebar-foot a:hover{text-decoration:underline}.api-response{margin-top:18px;max-width:100%;overflow:hidden}.api-response pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:390px;overflow-y:auto;background:#080d1e;border:1px solid #393055;padding:14px;border-radius:12px;color:#d6ccff;font-size:12px;line-height:1.55}.source-links a:focus-visible,.sidebar-foot a:focus-visible{outline:2px solid #c5a8ff;outline-offset:3px}
+
+
+/* Mobile sidebar scrolling fix */
+@media (max-width: 780px) {
+  .sidebar {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* PerpGuard mobile navigation scroll fix */
+@media (max-width: 780px) {
+  .sidebar {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .sidebar .brand,
+  .sidebar .nav-label,
+  .sidebar .nav-link,
+  .sidebar .sidebar-foot {
+    flex-shrink: 0;
+  }
+
+  .sidebar-foot {
+    margin-top: 20px;
+  }
+}
