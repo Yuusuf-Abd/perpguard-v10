@@ -33,7 +33,7 @@ test('real HTTP API integration using deterministic mock market, FX and hosted A
  let [status,data]=await get('/api/health');assert.equal(status,200);assert.equal(data.aiConfigured,true);
  [status,data]=await get('/api/crypto');assert.equal(status,200);assert.equal(data.items[0].price,77777);assert.equal(data.source,'CoinGecko');assert.ok(data.fetchedAt);
  [status,data]=await get('/api/crypto/history?id=bitcoin&days=7');assert.equal(status,200);assert.equal(data.points.length,2);
- [status,data]=await get('/api/crypto/history?id=unknown&days=7');assert.equal(status,400);
+ [status,data]=await get('/api/crypto/history?id=bitcoin&days=366');assert.equal(status,400);
  [status,data]=await get('/api/forex?base=USD&quote=EUR');assert.equal(status,200);assert.equal(data.rate,0.86);
  [status,data]=await get('/api/forex/history?base=USD&quote=EUR');assert.equal(status,200);assert.equal(data.points.length,2);
  const chat=await fetch(base+'/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({question:'What is the latest Bitcoin price?',assetId:'bitcoin'})});assert.equal(chat.status,200);const answer=await chat.json();assert.equal(answer.mode,'hosted-AI');assert.equal(answer.answer,'Verified mock AI answer');assert.equal(answer.sources[0].name,'CoinGecko');

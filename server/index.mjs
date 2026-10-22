@@ -97,15 +97,15 @@ if(req.method==='GET'&&url.pathname==='/api/crypto'){
 }
 if(req.method==='GET'&&url.pathname==='/api/crypto/history'){
  const id=url.searchParams.get('id')||'bitcoin';const days=url.searchParams.get('days')||'7';
- if(!/^[a-z0-9-]{1,80}$/.test(id)||!['1','7','30'].includes(days))return json(res,400,{error:'Unsupported asset or time range.'});
+ if(!/^[a-z0-9-]{1,80}$/.test(id)||!['1','7','30','90','365'].includes(days))return json(res,400,{error:'Unsupported asset or time range.'});
  const snapshot=await marketEngine.read(`history:${id}:${days}`,`/coins/${id}/market_chart?vs_currency=usd&days=${days}`,{ttl:300000,staleTtl:86400000});
  return json(res,200,{source:'CoinGecko',fetchedAt:snapshot.fetchedAt,stale:snapshot.stale,cache:snapshot.cache,warning:snapshot.warning||null,points:normalizeHistory(snapshot.data)});
 }
 if(req.method==='GET'&&url.pathname==='/api/forex/history'){
 const base=(url.searchParams.get('base')||'USD').toUpperCase();const quote=(url.searchParams.get('quote')||'EUR').toUpperCase();const currencies=new Set(['USD','EUR','GBP','NGN','JPY','CAD','CHF','AUD']);if(!currencies.has(base)||!currencies.has(quote))return json(res,400,{error:'Unsupported currency.'});
-const end=new Date(),start=new Date(end.getTime()-30*86400000);const startDate=start.toISOString().slice(0,10);const endDate=end.toISOString().slice(0,10);
+const days=Number(url.searchParams.get('days')||30);if(![7,30,90,365].includes(days))return json(res,400,{error:'Unsupported forex history range.'});const end=new Date(),start=new Date(end.getTime()-days*86400000);const startDate=start.toISOString().slice(0,10);const endDate=end.toISOString().slice(0,10);
 if(base===quote)return json(res,200,{source:'Identity conversion',points:[{date:startDate,rate:1},{date:endDate,rate:1}]});
-const key=`fxhist:${base}:${quote}:${endDate}`;const data=await cached(key,3600000,()=>getJSON(`${FRANKFURTER_BASE}/rates?from=${startDate}&to=${endDate}&base=${base}&quotes=${quote}`));
+const key=`fxhist:${base}:${quote}:${days}:${endDate}`;const data=await cached(key,3600000,()=>getJSON(`${FRANKFURTER_BASE}/rates?from=${startDate}&to=${endDate}&base=${base}&quotes=${quote}`));
 if(!Array.isArray(data))throw Error('Unexpected forex history response');return json(res,200,{source:'Frankfurter',points:data.filter(x=>x.quote===quote&&Number.isFinite(Number(x.rate))).map(x=>({date:String(x.date),rate:Number(x.rate)})).sort((a,b)=>a.date.localeCompare(b.date))});}
 if(req.method==='GET'&&url.pathname==='/api/forex'){
 const base=(url.searchParams.get('base')||'USD').toUpperCase();const quote=(url.searchParams.get('quote')||'EUR').toUpperCase();if(!/^[A-Z]{3}$/.test(base)||!/^[A-Z]{3}$/.test(quote))return json(res,400,{error:'Use ISO 3-letter currency codes.'});if(base===quote)return json(res,200,{base,quote,rate:1,date:new Date().toISOString().slice(0,10),source:'Identity conversion'});
