@@ -14,7 +14,7 @@ async function serveStatic(pathname,res){
   let decoded;try{decoded=decodeURIComponent(pathname)}catch{return false}
   const requested=resolve(DIST,'.'+decoded);
   if(requested!==DIST&&!requested.startsWith(DIST+sep))return false;
-  let target=requested;
+  let target=decoded==='/'?join(DIST,'index.html'):requested;
   try{if(!(await stat(target)).isFile())return false}catch{if(extname(decoded))return false;target=join(DIST,'index.html')}
   try{const data=await readFile(target);res.writeHead(200,{'Content-Type':MIME[extname(target)]||'application/octet-stream','X-Content-Type-Options':'nosniff','Cache-Control':target.endsWith('index.html')?'no-cache':'public, max-age=3600'});res.end(data);return true}catch{return false}
 }
