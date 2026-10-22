@@ -1,3 +1,4 @@
+import {createMarketEngine,normalizeMarkets,normalizeHistory} from './market-engine.mjs';
 import {chainStatus,inspectTransaction,inspectContract,isHash,isAddress} from './protocol.mjs';
 import http from 'node:http';
 import {URL} from 'node:url';
@@ -6,6 +7,7 @@ import {join,extname,resolve,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
 const PORT=Number(process.env.PORT||8787);
 const COINGECKO_BASE=process.env.COINGECKO_BASE_URL||'https://api.coingecko.com/api/v3';
+const marketEngine=createMarketEngine({baseUrl:COINGECKO_BASE,apiKey:process.env.COINGECKO_DEMO_KEY||''});
 const FRANKFURTER_BASE=process.env.FRANKFURTER_BASE_URL||'https://api.frankfurter.dev/v2';
 const AI_RESPONSES_URL=process.env.AI_RESPONSES_URL||'https://api.openai.com/v1/responses';
 const DIST=resolve(fileURLToPath(new URL('../dist/',import.meta.url)));
@@ -88,15 +90,17 @@ if(req.method==='GET'&&url.pathname==='/api/somnia/receipt'){
  return json(res,200,{found:true,hash,network:'Somnia Hideki testnet',chainId:50383,blockNumber:Number(BigInt(receipt.blockNumber)),status:receipt.status==='0x1'?'confirmed-success':'confirmed-reverted',from:typeof receipt.from==='string'?receipt.from:null,to:typeof receipt.to==='string'?receipt.to:null,checkedAt:new Date().toISOString(),note:'This is a blockchain receipt only. It does not prove a perpetual order was placed or filled.'});
 }
 if(req.method==='GET'&&url.pathname==='/api/health')return json(res,200,{ok:true,aiConfigured:!!process.env.OPENAI_API_KEY,cryptoConfigured:!!process.env.COINGECKO_DEMO_KEY,now:new Date().toISOString()});
+if(req.method==='GET'&&url.pathname==='/api/market/status')return json(res,200,marketEngine.diagnostics());
 if(req.method==='GET'&&url.pathname==='/api/crypto'){
-const ids='bitcoin,ethereum,solana,chainlink,polygon-ecosystem-token';const headers=process.env.COINGECKO_DEMO_KEY?{'x-cg-demo-api-key':process.env.COINGECKO_DEMO_KEY}:{};
-const result=await cached('crypto',65000,()=>getJSON(`${COINGECKO_BASE}/coins/markets?vs_currency=usd&ids=${ids}&order=market_cap_desc&per_page=5&page=1&sparkline=false&price_change_percentage=24h`,headers));
-return json(res,200,{source:'CoinGecko',fetchedAt:new Date(cache.get('crypto').at).toISOString(),items:result.map(x=>({id:String(x.id),name:String(x.name),symbol:String(x.symbol).toUpperCase(),price:Number(x.current_price),change:Number(x.price_change_percentage_24h),cap:Number(x.market_cap)}))});}
+ const snapshot=await marketEngine.read('markets','/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=25&page=1&sparkline=false&price_change_percentage=24h',{ttl:180000,staleTtl:86400000});
+ return json(res,200,{source:'CoinGecko',fetchedAt:snapshot.fetchedAt,stale:snapshot.stale,cache:snapshot.cache,warning:snapshot.warning||null,items:normalizeMarkets(snapshot.data)});
+}
 if(req.method==='GET'&&url.pathname==='/api/crypto/history'){
-const allowed=new Set(['bitcoin','ethereum','solana','chainlink','polygon-ecosystem-token']);const id=url.searchParams.get('id')||'bitcoin';const days=url.searchParams.get('days')||'7';if(!allowed.has(id)||!['1','7','30'].includes(days))return json(res,400,{error:'Unsupported asset or time range.'});
-const headers=process.env.COINGECKO_DEMO_KEY?{'x-cg-demo-api-key':process.env.COINGECKO_DEMO_KEY}:{};
-const key=`history:${id}:${days}`;const data=await cached(key,120000,()=>getJSON(`${COINGECKO_BASE}/coins/${id}/market_chart?vs_currency=usd&days=${days}`,headers));
-if(!Array.isArray(data.prices))throw Error('Unexpected upstream response');return json(res,200,{source:'CoinGecko',fetchedAt:new Date(cache.get(key).at).toISOString(),points:data.prices.filter(p=>Array.isArray(p)&&Number.isFinite(p[0])&&Number.isFinite(p[1])).map(p=>({at:p[0],price:p[1]}))});}
+ const id=url.searchParams.get('id')||'bitcoin';const days=url.searchParams.get('days')||'7';
+ if(!/^[a-z0-9-]{1,80}$/.test(id)||!['1','7','30'].includes(days))return json(res,400,{error:'Unsupported asset or time range.'});
+ const snapshot=await marketEngine.read(`history:${id}:${days}`,`/coins/${id}/market_chart?vs_currency=usd&days=${days}`,{ttl:300000,staleTtl:86400000});
+ return json(res,200,{source:'CoinGecko',fetchedAt:snapshot.fetchedAt,stale:snapshot.stale,cache:snapshot.cache,warning:snapshot.warning||null,points:normalizeHistory(snapshot.data)});
+}
 if(req.method==='GET'&&url.pathname==='/api/forex/history'){
 const base=(url.searchParams.get('base')||'USD').toUpperCase();const quote=(url.searchParams.get('quote')||'EUR').toUpperCase();const currencies=new Set(['USD','EUR','GBP','NGN','JPY','CAD','CHF','AUD']);if(!currencies.has(base)||!currencies.has(quote))return json(res,400,{error:'Unsupported currency.'});
 const end=new Date(),start=new Date(end.getTime()-30*86400000);const startDate=start.toISOString().slice(0,10);const endDate=end.toISOString().slice(0,10);
@@ -116,5 +120,5 @@ if(!process.env.OPENAI_API_KEY)return fallback();
 try{const response=await fetch(AI_RESPONSES_URL,{method:'POST',headers:{Authorization:`Bearer ${process.env.OPENAI_API_KEY}`,'Content-Type':'application/json'},body:JSON.stringify({model:process.env.OPENAI_MODEL||'gpt-4.1-mini',max_output_tokens:350,instructions:'You are PerpGuard support. Begin greetings with Welcome to PerpGuard. When asked for a tour, explain every site section: Overview, Markets, Forex, Risk Lab, Reliability, Wallet Watch, Paper Portfolio, QA Center, Help & Support, Ecosystem and About. Explain that assets belong to external wallets, not PerpGuard; receiving uses a compatible external wallet address, and withdrawals are performed in that external wallet, never inside PerpGuard. Explain that network, recipient, token and fee must be checked, that confirmed transfers are generally irreversible, and that public transaction receipts do not prove a token transfer or order fill. Never request secrets. Answer interactively with concise follow-up explanations and the provided timestamped market context when relevant. Only answer questions about the documented features: read-only sourced CoinGecko market quotes, Frankfurter daily FX reference rates, educational risk simulation, reliability demos, QA draft export, read-only public wallet monitoring and Somnia transaction receipt checks. Never claim transactions, custody, live trading, real-time forex quotes, or AI market predictions. Never solicit wallet secrets. Do not provide financial recommendations, leveraged trading instructions, automated order execution, or position recommendations. Provide general educational explanations of market mechanics and risk instead. If unsure, say so. Be concise.',input:[...((Array.isArray(body.history)?body.history:[]).slice(-6).filter(x=>x&&['user','assistant'].includes(x.role)&&typeof x.content==='string').map(x=>({role:x.role,content:x.content.slice(0,800)}))),{role:'user',content:`Current question: ${question}\nVerified market context: ${marketContext}\nOnly use verified context for current prices; explain data timestamps and uncertainty. No financial advice.`}]}),signal:AbortSignal.timeout(15000)});if(!response.ok)throw Error(`AI provider HTTP ${response.status}`);const data=await response.json();const answer=(data.output||[]).flatMap(x=>x.content||[]).filter(x=>x.type==='output_text').map(x=>x.text).join('\n');if(!answer)throw Error('No answer');return json(res,200,{answer,mode:'hosted-AI',sources:marketSnapshot?[{name:'CoinGecko',fetchedAt:marketSnapshot.fetchedAt}]:['PerpGuard documentation']});}catch{return fallback();}}
 if(req.method==='GET'&&!url.pathname.startsWith('/api/')&&await serveStatic(url.pathname,res))return;
 return json(res,404,{error:'Not found'});
-}catch(err){return json(res,503,{error:'Data source temporarily unavailable',detail:String(err.message||'Unknown error').slice(0,120)});}});
+}catch(err){return json(res,err.status===429?429:503,{error:'Data source temporarily unavailable',detail:String(err.message||'Unknown error').slice(0,120),retryAfterSeconds:err.retryAfter||null});}});
 server.listen(PORT,process.env.HOST||'127.0.0.1',()=>console.log(`PerpGuard: http://127.0.0.1:${PORT}`));
